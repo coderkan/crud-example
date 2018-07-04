@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" href="custom/autocomp/jquery-ui.css">
+	<script src="custom/autocomp/jquery-1.12.4.js"></script>
+	<script src="custom/autocomp/jquery-ui.js"></script>
+ 
+	<!-- CSS Files -->
+	<link rel="icon" type="image/png" href="custom/images/icons/favicon.ico"/> 
+
+	<link rel="stylesheet" type="text/css" href="custom/vendor/boostrap337/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="custom/fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+
+ 	<!-- External CSS -->
+ 	<link rel="stylesheet" type="text/css" href="mstyle.css">
+    <link rel="stylesheet" type="text/css" href="custom/jquery_confirm/jquery-confirm.min.css">
+
+	<!-- Scripts -->
+	<script  type="text/javascript" src="custom/vendor/bootstrap/js/popper.js"></script>
+	<script  type="text/javascript" src="custom/vendor/boostrap337/dist/js/bootstrap.min.js"></script>
+	<script  type="text/javascript" src="custom/vendor/select2/select2.min.js"></script>
+	<script  type="text/javascript" src="custom/jquery_confirm/jquery-confirm.min.js"></script>
+    <style>
+        input[type=text]:disabled {
+            background: transparent;
+            border: 0px solid;
+        }
+
+        th, td{
+            text-align:  center;
+        }
+
+    </style>
+
+
+    <script type="text/javascript">
+
+        /**
+        IE11 doesn't work
+        */
+        /*
+        class TMP {
+            constructor(){
+                this.index = -1;
+                this.text = "";
+            }
+
+            clear(){
+                this.index = -1;
+                this.text = "";
+            }
+
+            setValues(indx, txt){
+                this.index = indx;
+                this.text = txt;
+            }
+        }
+        
+        var tmp;
+        */
+        var tmp = {
+            index: -1,
+            text : "",
+            clear : function() {
+                this.index = -1;
+                this.text = "";
+            },
+            setValues: function(ind, txt){
+                this.index = ind;
+                this.text = txt;
+            }
+        };
+        var baseURL = "http://localhost:8080/CRUDBackend/ISGServlet";
+
+        $(function() {
+            // Handler for .ready() called.
+            //tmp = new TMP();
+            baseURL = window.location.href + "ISGServlet";
+            tmp.clear();
+            searchControl();
+            addControl();
+            tableEventHandler();
+        });
+
+        function convertTrToEng(trText){
+            var charMap = {
+                    Ç: 'C',
+                    Ö: 'O',
+                    Ş: 'S',
+                    İ: 'I',
+                    I: 'i',
+                    Ü: 'U',
+                    Ğ: 'G',
+                    ç: 'c',
+                    ö: 'o',
+                    ş: 's',
+                    ı: 'i',
+                    ü: 'u',
+                    ğ: 'g'
+                    };
+
+            var str = trText;
+
+            str_array = str.split('');
+
+            for (var i = 0, len = str_array.length; i < len; i++) {
+            str_array[i] = charMap[str_array[i]] || str_array[i];
+            }
+
+            str = str_array.join('');
+
+            var clearStr = str.replace(/[çöşüğı]/gi, "");
+            return clearStr;
+        }
+
+        function tableEventHandler(){
+            var tbl = document.getElementById("_table");
+            if (tbl != null) {
+                for (var i = 0; i < tbl.rows.length; i++) {
+                        tbl.rows[i].cells[3].onclick = function () { controlEditUpdate(this);};
+                        tbl.rows[i].cells[4].onclick = function () { controlDelete(this); };
+                }
+            }
+        }
+
+        function controlDelete(elm){
+            var index =  $( elm ).parent().index();  
+            var tbl = document.getElementById("_table");
+            if (tbl != null) {
+                var cll = tbl.rows[index+1].cells[1];
+                var $text = $( cll ).children('input');
+                $.alert({
+                    theme: 'supervan',
+                    title: 'Attention',
+                    content: 'Delete User?',
+                    buttons: {
+                        confirm: function () {
+                            deleteData($text.attr('id'));
+                        },
+                        cancel: function () {
+
+                        }
+                    }
+                });
+
+            }
+        }
+
+        function controlEditUpdate(elm){
+            var $spanIcon =  $( elm ).children('span');
+            var index =  $( elm ).parent().index();  
+            var table = document.getElementById("_table");
+            
+            
+            if (table != null) {
+                var cll = table.rows[index+1].cells[1];
+                var $text = $( cll ).children('input');
+            }
+
+            if($spanIcon.hasClass("glyphicon glyphicon-ok") ){
+                $.alert({
+                    theme: 'supervan',
+                    title: 'Attention',
+                    content: 'Update User?',
+                    buttons: {
+                        confirm: function () {
+                            // update
+                            updateInputData($text.attr('id'), convertTrToEng( $text.val() ));
+                            $spanIcon.removeClass().addClass("glyphicon glyphicon-plus"); 
+                            $text.attr('disabled','false');
+                        },
+                        cancel: function () {  
+                            $spanIcon.removeClass().addClass("glyphicon glyphicon-plus");   
+                            $text.attr('disabled','false');
+                            $text.val(tmp.text);
+                            tmp.clear();
+                        }
+                    }
+                });
+
+            }else if($spanIcon.hasClass("glyphicon glyphicon-plus")){
+                if(tmp.index == -1){
+                    $spanIcon.removeClass().addClass("glyphicon glyphicon-ok");
+                    $text.removeAttr('disabled');                
+                    tmp.setValues(index, $text.val());
+                }else{
+                    if (table != null) {
+                        var cl = table.rows[tmp.index+1].cells[1];
+                        var $tmpText = $( cl ).children('input');
+                        $tmpText.val(tmp.text);
+        
+                        var edt = table.rows[tmp.index+1].cells[3];
+                        var $edtSpan = $( edt ).children('span');
+                        $spanIcon.removeClass().addClass("glyphicon glyphicon-ok");
+                        $edtSpan.removeClass().addClass("glyphicon glyphicon-plus");
+                        $tmpText.attr('disabled','false'); 
+                        $text.removeAttr('disabled'); 
+                        tmp.setValues(index, $text.val());
+                    }
+                }
+            } 
+        }
+
+        function deleteData(id){
+            if(id == null)
+                return;
+
+            var prms = "delete=" + id;
+            $.ajax({
+                url : baseURL,
+                type: "POST",
+                data : prms,
+                success: function(data, textStatus, jqXHR)
+                {
+                    $.alert({
+                        theme: 'supervan',
+                        title: 'Alert!',
+                        content: data.message,
+                    });
+                    //alert(data.message);
+                    if(data.code != 0 ){
+                        searchAction();
+                    }
+
+                },
+                error: function (jqXHR, textStatus, errorThrown)
+                {
+                    $.alert({
+                        theme: 'supervan', 
+                        title: 'Alert!',
+                        content: "Error: " + textStatus,
+                    });
+                    //alert("Error: " + textStatus);
+                }
+            });            
+        }
+ 
+        function updateInputData(id, text){
+            if(id == null)
+                return;
+            if(text == null) text = "";
+            text = $.trim( text );
+
+            var prms = "update=" + id + "&uname=" + text;
+            $.ajax({
+                url : baseURL,
+                type: "POST",
+                data : prms,
+                success: function(data, textStatus, jqXHR)
+                {
+                    $.alert({
+                        theme: 'supervan',
+                        title: 'Alert!',
+                        content: data.message,
+                    });
+                    //alert(data.message);
+                    if(data.code != 0){
+                        searchAction();
+                        tmp.clear();
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown)
+                {
+                    $.alert({
+                        theme: 'supervan',
+                        title: 'Alert!',
+                        content: data.message,
+                    });
+                    //alert("Error: " + textStatus);
+                }
+            });
+        }
+
+
+        function searchAction(){
+            var searchText = $('#txtSearch').val();
+            searchText = $.trim( searchText );
+            if(searchText.length == 0){
+                $('#_tbody').empty();
+                tmp.clear();
+                return;
+            }
+            searchText = convertTrToEng(searchText);
+            var fullPath = baseURL+"?";
+            var prms = "name=" + searchText;
+            var path = fullPath + prms;
+            $.getJSON( path, function( data ) {
+                $('#_tbody').empty();
+                var count = 1;
+                $.each( data, function( id) {  
+                    $('#_tbody').append(getTableRowString(data[id], count++));
+                });
+                //if(data.length == 0)
+                    tmp.clear();
+                //
+                tableEventHandler();
+            });
+        }
+
+        function searchControl(){
+            $('#search').click(function () {
+                searchAction();
+            });
+            $('#txtSearch').keypress(function(event){
+                if(event.keyCode == 13){
+                    $('#search').click();
+                }
+            });
+        }
+
+
+        function getTableRowString(d, count){
+            var $row = $('<tr>'+
+                        '<th scope="row">' + count +'</th>'+
+                        '   <td>' +
+                            '<input id="' + d.id + '" type="text" name="yourname" style="text-align:center;"value="'+ d.name + '" disabled="disabled"/>' +
+                        '</td>'+
+                        
+                        '   <td>'+ d.date+ '</td>'+
+                        '   <td>'+
+                        '       <span class="glyphicon glyphicon-plus"></span>'+
+                        '   </td>'+
+                        '   <td>'+
+                        '       <span class="glyphicon glyphicon-trash"></span>'+
+                        '   </td>'+
+                        '</tr>'
+                        );
+
+            return $row;
+        }
+        
+        function isTextNull(id){
+            var addText = $(id).val();
+            addText = $.trim( addText );
+            if(addText.length == 0){
+                $.alert({
+                    theme: 'supervan',
+                    title: 'Alert!',
+                    content: 'Input is empty, please fill the input text',
+                });
+                return true;
+            }
+            return false;
+        }
+
+        function addAction(addText){
+            //var addText = $('#txtSearch').val();
+            /*addText = $.trim( addText );
+            if(addText.length == 0){
+                $.alert({
+                        title: 'Alert!',
+                        content: 'Input is empty, please fill the input text',
+                    });
+                //alert('Input is empty, please fill the input text');
+                return;
+            } */
+            
+            addText = convertTrToEng(addText);
+            var prms = "insert=" + addText;
+            $.ajax({
+                url : baseURL,
+                type: "POST",
+                data : prms,
+                success: function(data, textStatus, jqXHR)
+                {
+                    $.alert({
+                        theme: 'supervan',
+                        title: 'Alert!',
+                        content: data.message,
+                    });
+                    //alert(data.message);
+                    if(data.code != 0){
+                        searchAction();
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown)
+                {
+                    $.alert({
+                        theme: 'supervan',
+                        title: 'Alert!',
+                        content: "Error: " + textStatus,
+                    });
+                    //alert("Error: " + textStatus);
+                }
+            });
+        }
+
+        function addControl(){
+            $('#add').click(function () {
+                
+                if(!isTextNull('#txtSearch')){
+                    $.confirm({
+                        theme: 'supervan',
+                        title: 'Attention!',
+                        content: "Do you want to add " + $('#txtSearch').val() + " person to database?", 
+                        buttons: {
+                            confirm: function () {
+                                addAction($('#txtSearch').val());
+                            },
+                            cancel: function () {
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+    </script>
+
+    <title>Document</title>
+</head>
+<body>  
+    <div class="container" style="width: 100%; height: 100%;">
+        <div style="text-align: center;">
+            <h2>Security ISG Info Page</h2>
+        </div>
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" >
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" id="txtSearch"/>
+                    <div class="input-group-btn">
+                        <button id="search" class="btn btn-primary" type="submit">
+                            <span class="glyphicon glyphicon-search"></span>                        
+                        </button>
+                        <button id="add" class="btn btn-primary" type="submit">
+                                <span class="glyphicon glyphicon-plus"></span>                        
+                        </button>
+                </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+
+
+            <table id="_table" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Name & Surname</th>
+                        <th scope="col">Date</th>
+                        <th scope="col" style="text-align: center;">Edit/Update</th>
+                        <th scope="col">Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="_tbody">
+                    <!-- Data will load dynamically-->
+                </tbody>
+            </table>
+        </div>
+        </div>
+
+    </div>
+</body>
+</html>
