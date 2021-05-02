@@ -1,7 +1,5 @@
 package com.crudexample.servlets;
 
-
-
 import java.io.IOException;
 import java.util.List;
 
@@ -17,17 +15,13 @@ import com.crudexample.models.ISGUser;
 import com.crudexample.models.MessageHandler;
 import com.google.gson.Gson;
 
-
 @WebServlet("/ISGServlet")
 public class ISGServlet extends HttpServlet implements Servlet{
-
-
-	
-	
+		
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
-		
+
 		String jsonString = "";
 		String nameParam  = req.getParameter("name");
 		if(nameParam != null){
@@ -36,13 +30,9 @@ public class ISGServlet extends HttpServlet implements Servlet{
 			String isgJson = new Gson().toJson(isgList);
 			jsonString = isgJson;
 		}
-		
-		//super.doGet(req, resp);
-//	    String json = "{\"code\": \""+12345+"\",\"message\": \""+1+ "\"}";
-	    resp.setContentType("application/json");
-	    resp.setCharacterEncoding("UTF-8");
-	    resp.getWriter().write(jsonString);		
-	    System.out.println("DoGetzzXXXX request...");
+	    	resp.setContentType("application/json");
+	    	resp.setCharacterEncoding("UTF-8");
+	    	resp.getWriter().write(jsonString);
 	} 
 	
 	enum ISG{
@@ -50,7 +40,6 @@ public class ISGServlet extends HttpServlet implements Servlet{
 		DELETE,
 		UPDATE
 	};
-	
 	
 	public String getMessageString(ISG isg){
 		if(isg == ISG.DELETE)
@@ -72,7 +61,6 @@ public class ISGServlet extends HttpServlet implements Servlet{
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
 
-		
 		MessageHandler msgHandler = new MessageHandler();
 
 		String delParam = req.getParameter("delete");
@@ -101,11 +89,9 @@ public class ISGServlet extends HttpServlet implements Servlet{
 		
 
 		String json = new Gson().toJson(msgHandler);
-		//String json = "{\"code\": \""+200+"\",\"message\": \""+msg+ "\"}";
-	    resp.setContentType("application/json");
-	    resp.setCharacterEncoding("UTF-8");
-	    resp.getWriter().write(json);
-	    System.out.println("DoPostxzz request...");
+		resp.setContentType("application/json");
+	    	resp.setCharacterEncoding("UTF-8");
+	    	resp.getWriter().write(json);
 	}
 
 	private static final long serialVersionUID = 9211521441180764083L;
